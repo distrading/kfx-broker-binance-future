@@ -6,11 +6,13 @@
     "cpp": {
       "cmakeOverride": true,
       "target": "bind/python",
-      "links":{
+      "links": {
         "windows": [
+          "libcrypto",
           "libssl"
         ],
         "linux": [
+          "crypto",
           "ssl"
         ]
       }
@@ -18,7 +20,8 @@
   },
   "kungfuDependencies": {
     "boost": "v1.7.9",
-    "rapidjson": "v1.1.0"
+    "rapidjson": "v1.1.0",
+    "openssl": "v3.0"
   },
   "kungfuConfig": {
     "key": "binancefuture",

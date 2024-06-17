@@ -12,7 +12,6 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <sys/types.h>
-#include <unistd.h>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -129,7 +128,6 @@ public:
           callbacks_.on_ws_close(sessionIdenfitier_); // notify failed connection
 
           SPDLOG_INFO("exception: {}", se.code().message());
-          sleep(1000);
         }
 
         ws_.reset();
