@@ -1,0 +1,143 @@
+{
+  "version": "1.0.0-alpha.0",
+  "description": "KungFu Extension Binance",
+  "main": "package.json",
+  "kungfuBuild": {
+    "cpp": {
+      "cmakeOverride": true,
+      "target": "bind/python",
+      "links":{
+        "windows": [
+          "libssl"
+        ],
+        "linux": [
+          "ssl"
+        ]
+      }
+    }
+  },
+  "kungfuDependencies": {
+    "boost": "v1.7.9",
+    "rapidjson": "v1.1.0"
+  },
+  "kungfuConfig": {
+    "key": "binancefuture",
+    "name": "BinanceFuture",
+    "language": {
+      "zh-CN": {
+        "market_type": "类型",
+        "account_id": "账户id",
+        "market_type_tip": "请填写柜台类型",
+        "api_key": "api_key",
+        "api_key_tip": "请填写api_key",
+        "api_secret": "api_secret",
+        "api_secret_tip": "请填写api_secret",
+        "testnet": "测试网",
+        "testnet_tip": "是否为测试网",
+        "sync_external_order": "是否同步外部订单"
+
+      },
+      "en-US": {
+        "market_type": "market_type",
+        "account_id": "account_id",
+        "market_type_tip": "market_type_tip",
+        "api_key": "api_key",
+        "api_key_tip": "api_key_tip",
+        "api_secret": "api_secret",
+        "api_secret_tip": "api_secret_tip",
+        "testnet": "testnet",
+        "testnet_tip": "testnet_tip",
+        "sync_external_order": "sync external order"
+
+      }
+    },
+    "config": {
+      "td": {
+        "type": [
+          "crypto"
+        ],
+        "settings": [
+          {
+            "key": "account_id",
+            "name": "binancefuture.account_id",
+            "type": "str",
+            "required": true,
+            "primary": true,
+            "tip": "binancefuture.account_id_tip"
+          },
+          {
+            "key": "market_type",
+            "name": "binancefuture.market_type",
+            "type": "select",
+            "options": [
+              {
+                "value": "usd-market",
+                "label": "usd-market"
+              },
+              {
+                "value": "coin-market",
+                "label": "coin-market"
+              }
+            ],            
+            "required": true,
+            "tip": "binancefuture.market_type_tip"
+          },
+          {
+            "key": "api_key",
+            "name": "binancefuture.api_key",
+            "type": "str",
+            "required": true,
+            "tip": "binancefuture.api_key_tip"
+          },
+          {
+            "key": "api_secret",
+            "name": "binancefuture.api_secret",
+            "type": "str",
+            "required": true,
+            "tip": "binancefuture.api_secret_tip"
+          },
+          {
+            "key": "testnet",
+            "name": "binancefuture.testnet",
+            "type": "bool",
+            "required": false,
+            "default": false,
+            "tip": "binancefuture.testnet_tip"
+          },
+          {
+            "key": "sync_external_order",
+            "name": "binancefuture.sync_external_order",
+            "type": "bool",
+            "required": false,
+            "default": false,
+            "tip": "binancefuture.sync_external_order_tip"
+          }
+        ]
+      },
+      "md": {
+        "type": [
+          "crypto"
+        ],
+        "settings": [
+          {
+            "key": "market_type",
+            "name": "binancefuture.market_type",
+            "type": "select",
+            "options": [
+              {
+                "value": "usd-market",
+                "label": "usd-market"
+              },
+              {
+                "value": "coin-market",
+                "label": "coin-market"
+              }
+            ],            
+            "required": true,
+            "tip": "binancefuture.market_type_tip"
+          }
+        ]
+      }
+    }
+  }
+}
