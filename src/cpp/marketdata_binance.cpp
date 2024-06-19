@@ -43,7 +43,7 @@ void MarketDataBinance::on_start() {
   update_broker_state(BrokerState::Ready);
   auto endpoint = market_path_ + "/v1/exchangeInfo";
 
-  restful_request(RequestMethod::get, endpoint.c_str());
+  restful_request(RequestMethod::get, endpoint.c_str(), std::bind(&MarketDataBinance::on_restful_message, this, std::placeholders::_1));
 }
 
 void MarketDataBinance::on_restful_message(const std::string &msg) {

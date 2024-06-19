@@ -74,21 +74,6 @@ public:
     return;
   }
 
-  void restful_request(RequestMethod method, std::string target) {
-
-    std::thread thread_([this, method, target]() {
-      net::io_context ioc;
-      auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc, ctx_, host_, port_, headers_);
-      SPDLOG_DEBUG("restful_request thread_ target: {}", target);
-
-      restful_client_->request(method, target,
-                               std::bind(&BinanceRESTfulClient::on_restful_message, this, std::placeholders::_1));
-      ioc.run();
-    });
-
-    thread_.detach();
-    return;
-  }
 };
 
 #endif
