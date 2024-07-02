@@ -69,7 +69,7 @@ inline Document parse_json(const std::string &msg) noexcept {
 }
 
 TraderBinance::TraderBinance(broker::BrokerVendor &vendor)
-    : Trader(vendor), ctx_(ssl::context::sslv23_client), BinanceWebsocketClient(ioc_, ctx_),
+    : Trader(vendor), ctx_(ssl::context::sslv23_client), io_thread_(&TraderBinance::runIoContext, this), BinanceWebsocketClient(ioc_, ctx_),
       BinanceRESTfulClient(ioc_, ctx_) {
   KUNGFU_SETUP_LOG();
 
@@ -453,7 +453,10 @@ void TraderBinance::query_account() {
 void TraderBinance::pre_start() {
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
-  ioc_.run();
+  // io_thread_([ioc_]() {
+  //       ioc_.run();
+  // });
+  // ioc_.run();
   config_ = nlohmann::json::parse(get_config());
   SPDLOG_INFO("config: {}", get_config());
 

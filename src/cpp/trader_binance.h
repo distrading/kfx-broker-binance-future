@@ -105,6 +105,14 @@ private:
 
   net::io_context ioc_;
   ssl::context ctx_{ssl::context::sslv23_client};
+  std::thread io_thread_;
+  void runIoContext() {
+    while (true) {
+      if (!ioc_.run_one()) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    }
+  }
 
   inline static std::shared_ptr<TraderBinance> td_;
 

@@ -45,32 +45,19 @@ public:
   }
 
   void restful_request(RequestMethod method, std::string target, std::function<void(const std::string &)> callback) {
-    std::thread thread_([this, method, target, callback]() {
-      net::io_context ioc;
-      auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc, ctx_, host_, port_, headers_);
+      auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
       SPDLOG_DEBUG("restful_request thread_ target: {}", target);
-
       restful_client_->request(method, target, callback);
-      ioc.run();
-    });
-
-    thread_.detach();
     return;
   }
 
   void restful_request(RequestMethod method, std::string target,
                        std::function<void(const std::string &, const std::string &)> callback, std::string extra) {
 
-    std::thread thread_([this, method, target, callback, extra]() {
-      net::io_context ioc;
-      auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc, ctx_, host_, port_, headers_);
+      auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
       SPDLOG_DEBUG("restful_request thread_ target: {}", target);
 
       restful_client_->request(method, target, callback, extra);
-      ioc.run();
-    });
-
-    thread_.detach();
     return;
   }
 
