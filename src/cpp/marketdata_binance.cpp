@@ -24,7 +24,7 @@ using namespace rapidjson;
 namespace kungfu::wingchun::binance {
 
 MarketDataBinance::MarketDataBinance(broker::BrokerVendor &vendor)
-    : MarketData(vendor), ctx_(ssl::context::tlsv12_client), BinanceWebsocketClient(ioc_, ctx_),
+    : MarketData(vendor), ctx_(ssl::context::tlsv12_client),io_thread_(&MarketDataBinance::runIoContext, this), BinanceWebsocketClient(ioc_, ctx_),
       BinanceRESTfulClient(ioc_, ctx_) {
   KUNGFU_SETUP_LOG();
   SPDLOG_INFO("wait for http connect");
@@ -168,7 +168,7 @@ bool MarketDataBinance::subscribe(const std::vector<longfist::types::InstrumentK
     auto instrument = kf_to_binance_instrument(key.instrument_id.to_string());
     transform(instrument.begin(), instrument.end(), instrument.begin(), ::tolower);
     subscribe_instrument(instrument);
-    SPDLOG_INFO("subscribe instrument_id: {}", instrument);
+    SPDLOG_DEBUG("subscribe instrument_id: {}", instrument);
   }
   return true;
 }

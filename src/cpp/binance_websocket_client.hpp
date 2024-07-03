@@ -3,6 +3,7 @@
 #define BINANCE_WEBSOCKET_CLIENT_HPP
 
 #include "base_client/websocket_client.hpp"
+// #include "base_client/websocket_client_async.hpp"
 #include "boost/asio/io_context.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -54,14 +55,14 @@ public:
 
   void subscribe_instrument(std::string instrument) {
     // std::string target = "/ws/" + instrument + "@depth10@500ms";
-    std::string target = "/stream?streams=" + instrument + "@aggTrade/" + instrument + "@depth10@100ms";
+    std::string target = "/stream?streams=" + instrument + "@aggTrade/" + instrument + "@depth10@100ms/" + instrument + "@bookTicker";
     if (subscribe_map_.find(instrument) == subscribe_map_.end()) {
       subscribe_map_[instrument] =
           std::make_shared<WebsocketClient>(*this, instrument, ioc_, ctx_, host_, port_, target.c_str());
       subscribe_map_[instrument]->start_ws_connection();
       SPDLOG_DEBUG("subscribe {} {} {}", host_, target, instrument);
     } else {
-      SPDLOG_INFO("{} already subscribed.", instrument);
+      SPDLOG_DEBUG("{} already subscribed.", instrument);
     }
   }
 

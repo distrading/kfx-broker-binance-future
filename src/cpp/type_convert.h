@@ -56,11 +56,9 @@ inline void from_binance(const Value &data, Quote &quote) {
     ask_qty[j] = std::stod(item[1].GetString());
     j++;
   }
-  // quote.last_price = (bid[0] + ask[0]) / 2;
   int64_t ts = data["T"].GetInt64();
   quote.data_time = ts * 1000000;
 
-  // quote.instrument_id = data["s"].GetString();
   memcpy(quote.ask_price, ask, sizeof(quote.ask_price));
   memcpy(quote.bid_price, bid, sizeof(quote.bid_price));
   memcpy(quote.ask_volume, ask_qty, sizeof(quote.ask_price));
@@ -68,10 +66,6 @@ inline void from_binance(const Value &data, Quote &quote) {
 }
 
 inline void from_binance(const Value &data, Transaction &transaction) {
-  // std::string instrument_id(data["s"].GetString());
-  // std::replace(instrument_id.begin(), instrument_id.end(), '_', '-');
-
-  // transaction.instrument_id = instrument_id.c_str();
   transaction.price = std::stod(data["p"].GetString());
   transaction.volume = std::stod(data["q"].GetString());
   transaction.exec_type = longfist::enums::ExecType::Trade;
@@ -82,10 +76,6 @@ inline void from_binance(const Value &data, Transaction &transaction) {
 }
 
 inline void from_binance(const Value &data, Tick &tick) {
-  // std::string instrument_id(data["s"].GetString());
-  // std::replace(instrument_id.begin(), instrument_id.end(), '_', '-');
-
-  // tick.instrument_id = instrument_id.c_str();
   tick.ask_price = std::stod(data["a"].GetString());
   tick.ask_volume = std::stod(data["A"].GetString());
   tick.bid_price = std::stod(data["b"].GetString());
