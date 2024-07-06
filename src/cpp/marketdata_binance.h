@@ -61,6 +61,7 @@ private:
 
   longfist::enums::InstrumentType instrument_type_;
   net::io_context ioc_;
+  net::io_context ws_ioc_;
   ssl::context ctx_{ssl::context::tlsv12_client};
   std::thread io_thread_;
   void runIoContext() {

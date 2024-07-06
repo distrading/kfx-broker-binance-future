@@ -68,7 +68,7 @@ public:
 
   void unsubscribe_instrument(std::string instrument) {
     if (subscribe_map_.find(instrument) != subscribe_map_.end()) {
-      subscribe_map_[instrument]->stop_ws_connection();
+      // subscribe_map_[instrument]->stop_ws_connection();
       subscribe_map_.erase(instrument);
     } else {
       SPDLOG_INFO("{} not found.", instrument);

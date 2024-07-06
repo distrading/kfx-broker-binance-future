@@ -82,11 +82,9 @@ public:
 
           if (buffer_.size() > 0) {
             std::string bufferString = boost::beast::buffers_to_string(buffer_.data());
-            // auto msg = _jsonParser.parse(bufferString);
-
             callbacks_.on_ws_message(sessionIdenfitier_, bufferString);
           }
-          buffer_.clear();
+          buffer_.consume(buffer_.size()); // Clear the buffer
         } else { // termination has been requested
           ws_->close(boost::beast::websocket::close_code::normal);
           terminating = true; // we could break out of while here, but then we would not read any final message from
@@ -95,21 +93,22 @@ public:
       }
     } catch (beast::system_error const &se) {
       if (se.code() == websocket::error::closed) {
-        SPDLOG_INFO("socket was closed.");
+        SPDLOG_INFO("{} socket was closed.",sessionIdenfitier_);
       } else {
-        SPDLOG_INFO("exception: {}", se.code().message());
+        SPDLOG_INFO("exception: {} {}",sessionIdenfitier_, se.code().message());
       }
+      callbacks_.on_ws_close(sessionIdenfitier_);
     } catch (std::exception &ex) {
-      SPDLOG_ERROR("exception: {} ", ex.what());
+      SPDLOG_ERROR("exception: {} {} ",sessionIdenfitier_, ex.what());
+      callbacks_.on_ws_close(sessionIdenfitier_);
     }
-    // err close ws or not?
-    // callbacks_.on_ws_close(sessionIdenfitier_);
   }
 
   void stop_ws_connection() {
     terminate_ = true;
-    workerThread_.join();
-    workerThread_.~thread();
+    if (workerThread_.joinable()) {
+      workerThread_.join();
+    }
   }
 
   void start_ws_connection() {

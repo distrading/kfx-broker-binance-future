@@ -432,7 +432,11 @@ bool TraderBinance::custom_on_ws_event(const event_ptr &event) {
   return true;
 }
 
-void TraderBinance::on_ws_close(const std::string &sessionName) { SPDLOG_WARN("session {} closed!", sessionName); }
+void TraderBinance::on_ws_close(const std::string &sessionName) { 
+  unsubscribe_user_stream(sessionName);
+  query_listenkey();
+  SPDLOG_WARN("websocket session {} closed! reconnect", sessionName); 
+  }
 
 void TraderBinance::query_listenkey() {
   std::string target_listenKey = market_path_ + "/v1/listenKey";
