@@ -24,8 +24,8 @@ using namespace rapidjson;
 namespace kungfu::wingchun::binance {
 // ,io_thread_(&MarketDataBinance::runIoContext, this)
 MarketDataBinance::MarketDataBinance(broker::BrokerVendor &vendor)
-    : MarketData(vendor), ctx_(ssl::context::tlsv12_client),io_thread_(&MarketDataBinance::runIoContext, this), BinanceWebsocketClient(ws_ioc_, ctx_),
-      BinanceRESTfulClient(ioc_, ctx_) {
+    : MarketData(vendor), ctx_(ssl::context::tlsv12_client), io_thread_(&MarketDataBinance::runIoContext, this),
+      BinanceWebsocketClient(ws_ioc_, ctx_), BinanceRESTfulClient(ioc_, ctx_) {
   KUNGFU_SETUP_LOG();
   SPDLOG_INFO("wait for http connect");
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -43,7 +43,8 @@ void MarketDataBinance::on_start() {
   update_broker_state(BrokerState::Ready);
   auto endpoint = market_path_ + "/v1/exchangeInfo";
 
-  restful_request(RequestMethod::get, endpoint.c_str(), std::bind(&MarketDataBinance::on_restful_message, this, std::placeholders::_1));
+  restful_request(RequestMethod::get, endpoint.c_str(),
+                  std::bind(&MarketDataBinance::on_restful_message, this, std::placeholders::_1));
 }
 
 void MarketDataBinance::on_restful_message(const std::string &msg) {
@@ -83,7 +84,11 @@ void MarketDataBinance::on_restful_message(const std::string &msg) {
 void MarketDataBinance::on_ws_message(const std::string &sessionName, std::string &msg) {
   // SPDLOG_DEBUG(msg);
   Document doc;
-  doc.Parse(msg.c_str());
+  ParseResult ok = doc.Parse(msg.c_str());
+
+  if (!ok) {
+    SPDLOG_ERROR("msg: {} code: {}", msg, ok.Code());
+  }
   auto stream_name = doc["stream"].GetString();
 
   if (endswith(stream_name, "aggTrade")) {
@@ -132,11 +137,10 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
   }
 }
 
-void MarketDataBinance::on_ws_close(const std::string &sessionName) { 
-  SPDLOG_INFO("websocket reconnect {}", sessionName); 
-  // unsubscribe_instrument(sessionName);
-  subscribe_instrument(sessionName);
-  }
+void MarketDataBinance::on_ws_close(const std::string &sessionName) {
+  SPDLOG_INFO("websocket reconnect {}", sessionName);
+  resubscribe_instrument(sessionName);
+}
 
 void MarketDataBinance::pre_start() {
 
@@ -172,7 +176,7 @@ bool MarketDataBinance::subscribe(const std::vector<longfist::types::InstrumentK
     auto instrument = kf_to_binance_instrument(key.instrument_id.to_string());
     transform(instrument.begin(), instrument.end(), instrument.begin(), ::tolower);
     subscribe_instrument(instrument);
-    SPDLOG_DEBUG("subscribe instrument_id: {}", instrument);
+    SPDLOG_TRACE("subscribe instrument_id: {}", instrument);
   }
   return true;
 }

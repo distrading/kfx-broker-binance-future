@@ -8,6 +8,9 @@
 #include <boost/beast/ssl.hpp>
 
 #include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <spdlog/spdlog.h>
 #include <string>
@@ -45,7 +48,13 @@ class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
   bool terminate_ = false;
   WebsocketCallbacks &callbacks_;
   std::thread workerThread_;
+  std::thread monitThread_;
   std::string sessionIdenfitier_;
+
+  std::mutex mutex_;
+  std::condition_variable cv_;
+
+
 
 public:
   explicit WebsocketClient(WebsocketCallbacks &callbacks, std::string &sessionIdenfitier, net::io_context &ioc,
@@ -54,6 +63,7 @@ public:
         host_(host), port_(port), handshake_target_(target), hostAndPort_() {}
 
   void ConnectAndReceive() {
+    
     auto const tcpResolverResults = resolver_.resolve(host_, port_);
 
     tcpEndPoint_ = net::connect(get_lowest_layer(*ws_), tcpResolverResults);
@@ -85,54 +95,90 @@ public:
             callbacks_.on_ws_message(sessionIdenfitier_, bufferString);
           }
           buffer_.consume(buffer_.size()); // Clear the buffer
-        } else { // termination has been requested
-          ws_->close(boost::beast::websocket::close_code::normal);
-          terminating = true; // we could break out of while here, but then we would not read any final message from
-                              // cpty after we send close?
         }
+
       }
+      // ws_->close(boost::beast::websocket::close_code::normal);
+
     } catch (beast::system_error const &se) {
       if (se.code() == websocket::error::closed) {
-        SPDLOG_INFO("{} socket was closed.",sessionIdenfitier_);
+        SPDLOG_ERROR("{} socket was closed.", sessionIdenfitier_);
       } else {
-        SPDLOG_INFO("exception: {} {}",sessionIdenfitier_, se.code().message());
+        SPDLOG_ERROR("{} beast::exception:  {}", sessionIdenfitier_, se.code().message());
+        SPDLOG_ERROR("last msg {}", boost::beast::buffers_to_string(buffer_.data()));
+        buffer_.consume(buffer_.size());
       }
-      callbacks_.on_ws_close(sessionIdenfitier_);
+      throw;
     } catch (std::exception &ex) {
-      SPDLOG_ERROR("exception: {} {} ",sessionIdenfitier_, ex.what());
-      callbacks_.on_ws_close(sessionIdenfitier_);
+      SPDLOG_ERROR("std::exception: {} {} ", sessionIdenfitier_, ex.what());
+      throw;
     }
   }
 
   void stop_ws_connection() {
-    terminate_ = true;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      terminate_ = true;
+    }
+    cv_.notify_all();
     if (workerThread_.joinable()) {
       workerThread_.join();
     }
+    if (monitThread_.joinable()) {
+      monitThread_.join();
+    }
+
+  }
+
+
+  void workerThreadFunc() {
+    while (!terminate_) {
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ws_ = std::make_shared<websocket::stream<beast::ssl_stream<tcp::socket>>>(ioc_, ctx_);
+      }
+      try {
+        ConnectAndReceive();
+      } catch (beast::system_error const &se) {
+        SPDLOG_ERROR(" {} workerThreadFunc exception: {}", sessionIdenfitier_, se.code().message());
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // 重试
+        continue;
+      }
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ws_.reset();
+      }
+      std::unique_lock<std::mutex> lock(mutex_);
+      cv_.wait(lock, [this] { return terminate_; });
+    }
+
+  }
+
+  void monitThreadFunc() {
+    while (true) {
+      try {
+        workerThread_.join();
+        SPDLOG_INFO(" workerThread_ joined!");
+      } catch (const std::exception& e) {
+        SPDLOG_ERROR(" monitor Thread exception: {}", e.what());
+        workerThread_ = std::thread([this] {
+          workerThreadFunc();
+        });
+      }
+    }
+    SPDLOG_INFO(" start_ws_connection close");
   }
 
   void start_ws_connection() {
     workerThread_ = std::thread([this] {
-      while (!terminate_) {
-
-        ws_ = std::make_shared<websocket::stream<beast::ssl_stream<tcp::socket>>>(ioc_, ctx_);
-
-        try {
-          // initalizes websocket and polls continuously for messages until socket closed or an exception occurs
-          ConnectAndReceive();
-        }
-        // catches network or ssl handshake errors in attemting to establish the websocket
-        catch (beast::system_error const &se) {
-
-          callbacks_.on_ws_close(sessionIdenfitier_); // notify failed connection
-
-          SPDLOG_INFO("exception: {}", se.code().message());
-        }
-
-        ws_.reset();
-      }
-      SPDLOG_INFO("ws Stopped.");
+      workerThreadFunc();
     });
+    SPDLOG_TRACE("{} workerThread_ created!", sessionIdenfitier_);
+    monitThread_ = std::thread([this] {
+      monitThreadFunc();
+    });
+    SPDLOG_TRACE("{} monitThread_ created!", sessionIdenfitier_);
+
   }
 };
 
