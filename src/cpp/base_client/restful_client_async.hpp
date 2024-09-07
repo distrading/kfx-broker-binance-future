@@ -82,9 +82,10 @@ public:
     // Set SNI Hostname (many hosts need this to handshake successfully)
     if (!SSL_set_tlsext_host_name(stream_.native_handle(), host_.c_str())) {
       beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
-      std::cerr << ec.message() << "\n";
+      SPDLOG_ERROR("SSL_set_tlsext_host_name {}", ec.message());
       return;
     }
+    SPDLOG_DEBUG("make_request after SSL_set_tlsext_host_name");
 
     req_.version(11);
     req_.method(req_msg_.method);
@@ -95,12 +96,19 @@ public:
     for (auto &header : extra_http_headers_) {
       req_.insert(header.first, header.second);
     }
+    // results_ = resolver_.resolve(host_, port_);
+    // for (const auto& endpoint : results_) {
+    //     std::cout << "Endpoint: " << endpoint.endpoint() << "\n";
+    //     std::cout << "Host: " << endpoint.host_name() << "\n";
+    //     std::cout << "Service: " << endpoint.service_name() << "\n";
+    // }
+    SPDLOG_DEBUG("make_request after resolve");
 
     resolver_.async_resolve(host_, port_, beast::bind_front_handler(&RESTfulClient::on_resolve, shared_from_this()));
   }
 
   void on_resolve(beast::error_code ec, tcp::resolver::results_type results) {
-    // SPDLOG_DEBUG("on_resolve");
+    SPDLOG_DEBUG("on_resolve");
 
     if (ec)
       return SPDLOG_ERROR("resolve {}", ec.message());
@@ -114,7 +122,7 @@ public:
   }
 
   void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type) {
-    // SPDLOG_DEBUG("on_connect");
+    SPDLOG_DEBUG("on_connect");
 
     if (ec)
       return SPDLOG_ERROR("connect {}", ec.message());
@@ -125,7 +133,7 @@ public:
   }
 
   void on_handshake(beast::error_code ec) {
-    // SPDLOG_DEBUG("on_handshake");
+    SPDLOG_DEBUG("on_handshake");
 
     if (ec)
       return SPDLOG_ERROR("on_handshake {}", ec.message());
@@ -137,6 +145,8 @@ public:
     http::async_write(stream_, req_, beast::bind_front_handler(&RESTfulClient::on_write, shared_from_this()));
   }
   void on_write(beast::error_code ec, std::size_t bytes_transferred) {
+    SPDLOG_DEBUG("on_write");
+
     boost::ignore_unused(bytes_transferred);
 
     if (ec)
@@ -147,6 +157,8 @@ public:
   }
 
   void on_read(beast::error_code ec, std::size_t bytes_transferred) {
+    SPDLOG_DEBUG("on_read");
+    
     boost::ignore_unused(bytes_transferred);
 
     if (ec)
@@ -167,6 +179,7 @@ public:
   }
 
   void on_shutdown(beast::error_code ec) {
+    SPDLOG_DEBUG("on_shutdown");
 
     if (ec != net::ssl::error::stream_truncated)
       return SPDLOG_ERROR("on_shutdown {}", ec.message());
@@ -175,22 +188,24 @@ public:
   }
 
   void request(RequestMethod method, std::string target, std::function<void(const std::string &)> callback) {
+    SPDLOG_DEBUG("request callback_method1_");
+
     callback_method1_ = callback;
 
     req_msg_.method = method;
     req_msg_.target = target;
     make_request();
-    // workerThread_ = std::thread([this] { make_request(); });
   }
 
   void request(RequestMethod method, std::string target,
                std::function<void(const std::string &, const std::string &)> callback, std::string extra) {
+    SPDLOG_DEBUG("request callback_method2_");
+
     callback_method2_ = callback;
     extra_ = extra;
     req_msg_.method = method;
     req_msg_.target = target;
     make_request();
-    // workerThread_ = std::thread([this] { make_request(); });
   }
 };
 

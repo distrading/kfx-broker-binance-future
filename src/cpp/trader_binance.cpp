@@ -75,13 +75,15 @@ TraderBinance::TraderBinance(broker::BrokerVendor &vendor)
 
   SPDLOG_INFO("wait for http connect");
   std::this_thread::sleep_for(std::chrono::seconds(1));
-  td_ = std::shared_ptr<TraderBinance>(this);
+  // td_ = std::shared_ptr<TraderBinance>(this);
 
   SPDLOG_INFO("construct TraderBinance");
 }
 
 TraderBinance::~TraderBinance() {
   SPDLOG_INFO(" ~TraderBinance");
+  io_thread_.join();
+
   // stop_ws_client();
 }
 

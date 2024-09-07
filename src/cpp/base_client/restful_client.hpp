@@ -38,7 +38,7 @@ public:
 
 struct RequestMassage {
   RequestMethod method;
-  char const target;
+  std::string target;
 };
 
 class RESTfulClient : public std::enable_shared_from_this<RESTfulClient> {
@@ -59,7 +59,7 @@ class RESTfulClient : public std::enable_shared_from_this<RESTfulClient> {
   bool terminate_ = false;
   boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> results_;
   Headers extra_http_headers_;
-  RequestMassage msg_;
+  RequestMassage msg_{};
   std::string extra_;
   std::function<void(const std::string &)> callback_method1_;
   std::function<void(const std::string &, const std::string &)> callback_method2_;
@@ -94,7 +94,7 @@ public:
     return res;
   }
 
-  void request(RequestMethod method, char const target, std::function<void(const std::string &)> callback) {
+  void request(RequestMethod method, std::string target, std::function<void(const std::string &)> callback) {
     callback_method1_ = callback;
     msg_.method = method;
     msg_.target = target;
@@ -102,7 +102,7 @@ public:
     callback_method1_(res.body());
   }
 
-  void request(RequestMethod method, char const target,
+  void request(RequestMethod method, std::string target,
                std::function<void(const std::string &, const std::string &)> callback, std::string extra) {
     extra_ = extra;
     callback_method2_ = callback;

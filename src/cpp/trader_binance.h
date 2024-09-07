@@ -114,7 +114,7 @@ private:
     }
   }
 
-  inline static std::shared_ptr<TraderBinance> td_;
+  // inline static std::shared_ptr<TraderBinance> td_;
 
   std::unordered_map<uint64_t, uint64_t> map_kf_to_binance_order_id_;
   std::unordered_map<uint64_t, uint64_t> map_binance_to_kf_order_id_;
