@@ -61,16 +61,10 @@ private:
 
   longfist::enums::InstrumentType instrument_type_;
   net::io_context ioc_;
-  net::io_context ws_ioc_;
   ssl::context ctx_{ssl::context::tlsv12_client};
   std::thread io_thread_;
-  void runIoContext() {
-    while (true) {
-      if (!ioc_.run_one()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }
-    }
-  }
+  net::io_context::work work_;
+  void runIoContext() { ioc_.run(); }
   std::unordered_map<std::string, std::string> kf_ba_instrument_map_;
   std::unordered_map<std::string, std::string> ba_kf_instrument_map_;
   std::unordered_map<std::string, longfist::types::Transaction> transaction_map_; // cache for quote last_price

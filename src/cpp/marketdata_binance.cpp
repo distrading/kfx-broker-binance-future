@@ -24,8 +24,9 @@ using namespace rapidjson;
 namespace kungfu::wingchun::binance {
 // ,io_thread_(&MarketDataBinance::runIoContext, this)
 MarketDataBinance::MarketDataBinance(broker::BrokerVendor &vendor)
-    : MarketData(vendor), ctx_(ssl::context::tlsv12_client), io_thread_(&MarketDataBinance::runIoContext, this),
-      BinanceWebsocketClient(ws_ioc_, ctx_), BinanceRESTfulClient(ioc_, ctx_) {
+    : MarketData(vendor), ctx_(ssl::context::tlsv12_client), work_(ioc_),
+      io_thread_(&MarketDataBinance::runIoContext, this), BinanceWebsocketClient(ioc_, ctx_),
+      BinanceRESTfulClient(ioc_, ctx_) {
   KUNGFU_SETUP_LOG();
   SPDLOG_INFO("wait for http connect");
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -33,8 +34,7 @@ MarketDataBinance::MarketDataBinance(broker::BrokerVendor &vendor)
 
 MarketDataBinance::~MarketDataBinance() {
   SPDLOG_INFO(" ~MarketDataBinance");
-  // stop_ws_client();
-  // stop_rest_client();
+  io_thread_.join();
 }
 
 void MarketDataBinance::on_start() {
@@ -146,7 +146,6 @@ void MarketDataBinance::pre_start() {
 
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
-  ws_ioc_.run();
   config_ = nlohmann::json::parse(get_config());
   SPDLOG_INFO("config: {}", get_config());
 

@@ -25,12 +25,8 @@ class BinanceRESTfulClient : public RESTfulCallbacks {
   std::string port_ = "443";
   net::io_context &ioc_;
   ssl::context &ctx_;
-  std::shared_ptr<RESTfulClient> restful_client_;
   RequestParams params_;
-  // std::queue<RequestMassage> messageQueue_;
   Headers headers_;
-
-  std::vector<std::future<void>> futures_;
 
 public:
   BinanceRESTfulClient(net::io_context &ioc, ssl::context &ctx) : ioc_(ioc), ctx_(ctx){};
@@ -45,23 +41,17 @@ public:
   }
 
   void restful_request(RequestMethod method, std::string target, std::function<void(const std::string &)> callback) {
-    net::io_context ioc;
-    auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc, ctx_, host_, port_, headers_);
+    auto restful_client = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
     SPDLOG_DEBUG("restful_request thread_ target: {}", target);
-    restful_client_->request(method, target, callback);
-    ioc.run();
+    restful_client->request(method, target, callback);
     return;
   }
 
   void restful_request(RequestMethod method, std::string target,
                        std::function<void(const std::string &, const std::string &)> callback, std::string extra) {
-    net::io_context ioc;
-
-    auto restful_client_ = std::make_shared<RESTfulClient>(*this, ioc, ctx_, host_, port_, headers_);
+    auto restful_client = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
     SPDLOG_DEBUG("restful_request thread_ target: {}", target);
-
-    restful_client_->request(method, target, callback, extra);
-    ioc.run();
+    restful_client->request(method, target, callback, extra);
     return;
   }
 };

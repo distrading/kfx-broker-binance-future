@@ -69,20 +69,19 @@ inline Document parse_json(const std::string &msg) noexcept {
 }
 
 TraderBinance::TraderBinance(broker::BrokerVendor &vendor)
-    : Trader(vendor), ctx_(ssl::context::sslv23_client), io_thread_(&TraderBinance::runIoContext, this),
+    : Trader(vendor), ctx_(ssl::context::tlsv12_client), work_(ioc_), io_thread_(&TraderBinance::runIoContext, this),
       BinanceWebsocketClient(ioc_, ctx_), BinanceRESTfulClient(ioc_, ctx_) {
   KUNGFU_SETUP_LOG();
 
   SPDLOG_INFO("wait for http connect");
   std::this_thread::sleep_for(std::chrono::seconds(1));
-  td_ = std::shared_ptr<TraderBinance>(this);
 
   SPDLOG_INFO("construct TraderBinance");
 }
 
 TraderBinance::~TraderBinance() {
   SPDLOG_INFO(" ~TraderBinance");
-  // stop_ws_client();
+  io_thread_.join();
 }
 
 void TraderBinance::sign_request(std::string &target, RequestParams params) {
@@ -101,10 +100,13 @@ void TraderBinance::sign_request(std::string &target, RequestParams params) {
 
 void TraderBinance::on_query_account(const std::string &msg) {
   // SPDLOG_DEBUG("on_query_account {}", msg);
+  SPDLOG_DEBUG("on_query_account Thread ID: {}", std::this_thread::get_id());
+
   auto &rest_message =
       get_thread_writer()->open_custom_data<BufferBinanceRestReport>(BinanceRestAccountReportType, now());
   rest_message.message = msg.c_str();
   get_thread_writer()->close_data();
+  SPDLOG_DEBUG("on_query_account after close_data");
 }
 
 void TraderBinance::on_query_listenkey(const std::string &msg) {
@@ -123,6 +125,7 @@ void TraderBinance::on_query_listenkey(const std::string &msg) {
 
 void TraderBinance::on_send_order(const std::string &msg, const std::string &extra) {
   // only use error message from restful api
+  SPDLOG_DEBUG("on_send_order {}", msg);
   auto &rest_message =
       get_thread_writer()->open_custom_data<BufferBinanceRestOrderReport>(BinanceRestOrderReportType, now());
   rest_message.message = msg.c_str();
@@ -159,6 +162,7 @@ bool TraderBinance::on_custom_event(const event_ptr &event) {
 }
 
 bool TraderBinance::custom_on_query_account_event(const event_ptr &event) {
+  SPDLOG_DEBUG("custom_on_query_account_event Thread ID: {}", std::this_thread::get_id());
 
   const auto *rest_message = reinterpret_cast<const BufferBinanceRestReport *>(event->data_address());
   auto msg = rest_message->message;
@@ -439,6 +443,8 @@ void TraderBinance::on_ws_close(const std::string &sessionName) {
 }
 
 void TraderBinance::query_listenkey() {
+  SPDLOG_DEBUG("query_listenkey Thread ID: {}", std::this_thread::get_id());
+
   std::string target_listenKey = market_path_ + "/v1/listenKey";
 
   sign_request(target_listenKey, {});
@@ -448,6 +454,8 @@ void TraderBinance::query_listenkey() {
 }
 
 void TraderBinance::query_account() {
+  SPDLOG_DEBUG("query_account Thread ID: {}", std::this_thread::get_id());
+
   std::string target_account = market_path_ + ep_version_ + "/account";
   sign_request(target_account, {});
   restful_request(RequestMethod::get, target_account.c_str(),
