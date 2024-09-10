@@ -98,10 +98,19 @@ void TraderBinance::sign_request(std::string &target, RequestParams params) {
 }
 
 void TraderBinance::on_query_account(const std::string &msg) {
-  BufferBinanceRestReport rest_message;
+  BufferBinanceMessage rest_message;
   rest_message.message = msg.c_str();
 
   get_thread_writer()->write(now(), rest_message, BinanceRestAccountReportType);
+
+  get_thread_writer()->close_data();
+}
+
+void TraderBinance::on_query_open_orders(const std::string &msg) {
+  BufferBinanceMessage rest_message;
+  rest_message.message = msg.c_str();
+
+  get_thread_writer()->write(now(), rest_message, BinanceRestAllOrderReportType);
 
   get_thread_writer()->close_data();
 }
@@ -132,7 +141,7 @@ void TraderBinance::on_send_order(const std::string &msg, const std::string &ext
 
 void TraderBinance::on_ws_message(const std::string &sessionName, std::string &msg) {
   SPDLOG_TRACE(msg);
-  BufferBinanceWebSocketReport ws_message;
+  BufferBinanceMessage ws_message;
   ws_message.message = msg.c_str();
   get_thread_writer()->write(now(), ws_message, BinanceWebSocketReportType);
   get_thread_writer()->close_data();
@@ -153,12 +162,18 @@ bool TraderBinance::on_custom_event(const event_ptr &event) {
     return custom_on_send_order_event(event);
   case BinanceRestAccountReportType:
     return custom_on_query_account_event(event);
+  case BinanceRestAllOrderReportType:
+    return custom_on_query_open_orders_event(event);
   }
   return false;
 }
+bool TraderBinance::custom_on_query_open_orders_event(const event_ptr &event) {
+  auto msg = event->data_as_string();
+  SPDLOG_INFO(msg);
+  return true;
+}
 
 bool TraderBinance::custom_on_query_account_event(const event_ptr &event) {
-  // SPDLOG_DEBUG(msg);
   auto msg = event->data_as_string();
   auto doc = parse_json(msg);
   if (doc.HasMember("code")) {
@@ -279,7 +294,7 @@ bool TraderBinance::custom_on_ws_event(const event_ptr &event) {
   // renew listenKey
   if (string_equals(ba_event_type, "listenKeyExpired")) {
 
-    unsubscribe_user_stream(doc["listenKey"].GetString());
+    // unsubscribe_user_stream(doc["listenKey"].GetString());
     std::string target_listenKey = market_path_ + "/v1/listenKey";
 
     sign_request(target_listenKey, {});
@@ -451,7 +466,16 @@ void TraderBinance::query_account() {
                   std::bind(&TraderBinance::on_query_account, this, std::placeholders::_1));
 }
 
+void TraderBinance::query_open_orders() {
+
+  std::string target_open_orders = market_path_ + "/v1/openOrders";
+  sign_request(target_open_orders, {});
+  restful_request(RequestMethod::get, target_open_orders.c_str(),
+                  std::bind(&TraderBinance::on_query_open_orders, this, std::placeholders::_1));
+}
+
 void TraderBinance::pre_start() {
+  disable_recover();
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
   // io_thread_([ioc_]() {
@@ -499,6 +523,8 @@ void TraderBinance::pre_start() {
   query_listenkey();
   // get init account&position
   query_account();
+  // get all open order
+  query_open_orders();
 
   SPDLOG_INFO("Connecting Binance");
   update_broker_state(BrokerState::Connected);

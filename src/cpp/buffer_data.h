@@ -13,21 +13,19 @@ static constexpr int32_t BinanceWebSocketReportType = 88880000;
 static constexpr int32_t BinanceRestReportType = 88880001;
 static constexpr int32_t BinanceRestOrderReportType = 88880002;
 static constexpr int32_t BinanceRestAccountReportType = 88880003;
+static constexpr int32_t BinanceRestAllOrderReportType = 88880004;
 
-struct BufferBinanceWebSocketReport {
+struct BufferBinanceMessage {
   std::string message;
   std::string to_string() const { return message; }
 };
 
-struct BufferBinanceRestReport {
-  std::string message;
-  std::string to_string() const { return message; }
-};
 
 struct BufferBinanceRestOrderReport {
   char message[1024];
   char extra[64];
 };
+
 
 } // namespace kungfu::wingchun::binance
 

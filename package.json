@@ -36,9 +36,7 @@
         "api_secret": "api_secret",
         "api_secret_tip": "请填写api_secret",
         "testnet": "测试网",
-        "testnet_tip": "是否为测试网",
-        "sync_external_order": "是否同步外部订单"
-
+        "testnet_tip": "是否为测试网"
       },
       "en-US": {
         "market_type": "market_type",
@@ -49,9 +47,7 @@
         "api_secret": "api_secret",
         "api_secret_tip": "api_secret_tip",
         "testnet": "testnet",
-        "testnet_tip": "testnet_tip",
-        "sync_external_order": "sync external order"
-
+        "testnet_tip": "testnet_tip"
       }
     },
     "config": {
@@ -106,14 +102,6 @@
             "required": false,
             "default": false,
             "tip": "binancefuture.testnet_tip"
-          },
-          {
-            "key": "sync_external_order",
-            "name": "binancefuture.sync_external_order",
-            "type": "bool",
-            "required": false,
-            "default": false,
-            "tip": "binancefuture.sync_external_order_tip"
           }
         ]
       },

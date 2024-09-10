@@ -96,7 +96,7 @@ public:
 
   void unsubscribe_user_stream(std::string listenKey) {
     if (user_stream_.find(listenKey) != user_stream_.end()) {
-      // user_stream_[listenKey]->stop_ws_connection();
+      user_stream_[listenKey]->stop_ws_connection();
       user_stream_.erase(listenKey);
     } else {
       SPDLOG_INFO("{} not found.", listenKey);

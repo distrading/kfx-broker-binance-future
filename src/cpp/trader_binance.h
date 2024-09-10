@@ -57,6 +57,7 @@ public:
 
   void query_listenkey();
   void query_account();
+  void query_open_orders();
 
   // web callbacks
   void on_ws_message(const std::string &sessionName, std::string &msg) override;
@@ -70,6 +71,7 @@ public:
   // rest callbacks
   void on_send_order(const std::string &msg, const std::string &extra);
   void on_query_account(const std::string &msg);
+  void on_query_open_orders(const std::string &msg);
   void on_cancel_order(const std::string &msg);
   void on_query_listenkey(const std::string &msg);
   void on_renew_listenkey(const std::string &msg);
@@ -80,6 +82,7 @@ public:
   // custom rest callbacks
   bool custom_on_send_order_event(const event_ptr &event);
   bool custom_on_query_account_event(const event_ptr &event);
+  bool custom_on_query_open_orders_event(const event_ptr &event);
   bool custom_on_cancel_order_event(const event_ptr &event);
   bool custom_on_query_listenkey_event(const event_ptr &event);
   bool custom_on_renew_listenkey_event(const event_ptr &event);
