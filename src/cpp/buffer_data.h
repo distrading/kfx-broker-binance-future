@@ -25,8 +25,8 @@ struct BufferBinanceRestReport {
 };
 
 struct BufferBinanceRestOrderReport {
-  char message[500];
-  char extra[30];
+  char message[1024];
+  char extra[64];
 };
 
 } // namespace kungfu::wingchun::binance

@@ -78,7 +78,7 @@ public:
   }
 
   void make_request() {
-    SPDLOG_DEBUG("make_request {}", req_msg_.target);
+    SPDLOG_TRACE("make_request {}", req_msg_.target);
     // Set SNI Hostname (many hosts need this to handshake successfully)
     if (!SSL_set_tlsext_host_name(stream_.native_handle(), host_.c_str())) {
       beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};

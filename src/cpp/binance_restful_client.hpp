@@ -42,7 +42,6 @@ public:
 
   void restful_request(RequestMethod method, std::string target, std::function<void(const std::string &)> callback) {
     auto restful_client = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
-    SPDLOG_DEBUG("restful_request thread_ target: {}", target);
     restful_client->request(method, target, callback);
     return;
   }
@@ -50,7 +49,6 @@ public:
   void restful_request(RequestMethod method, std::string target,
                        std::function<void(const std::string &, const std::string &)> callback, std::string extra) {
     auto restful_client = std::make_shared<RESTfulClient>(*this, ioc_, ctx_, host_, port_, headers_);
-    SPDLOG_DEBUG("restful_request thread_ target: {}", target);
     restful_client->request(method, target, callback, extra);
     return;
   }
