@@ -16,15 +16,17 @@ static constexpr int32_t BinanceRestAccountReportType = 88880003;
 
 struct BufferBinanceWebSocketReport {
   std::string message;
+  std::string to_string() const { return message; }
 };
 
 struct BufferBinanceRestReport {
   std::string message;
+  std::string to_string() const { return message; }
 };
 
 struct BufferBinanceRestOrderReport {
-  std::string message;
-  std::string extra;
+  char message[500];
+  char extra[30];
 };
 
 } // namespace kungfu::wingchun::binance
