@@ -415,7 +415,12 @@ bool TraderBinance::custom_on_ws_event(const event_ptr &event) {
       try {
         kf_order_id = std::stoull(clientOrderId);
       } catch (const std::invalid_argument &e) {
-        SPDLOG_INFO("external order ba_order_id {}, clientOrderId={}", ba_order_id, clientOrderId);
+        SPDLOG_WARN("external order ba_order_id {}, clientOrderId={}", ba_order_id, clientOrderId);
+        return false;
+      }
+
+      if (not has_order(kf_order_id)) {
+        SPDLOG_ERROR("no order_id {} in td", kf_order_id);
         return false;
       }
 
@@ -527,7 +532,7 @@ void TraderBinance::keepalive_listenkey() {
 }
 
 void TraderBinance::pre_start() {
-  disable_recover();
+  // disable_recover();
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
 
@@ -583,7 +588,7 @@ void TraderBinance::on_start() {
   SPDLOG_INFO("TraderBinance on_start");
   update_broker_state(BrokerState::Ready);
 
-  add_time_interval(60 * 5 * time_unit::NANOSECONDS_PER_SECOND, [&](auto e) { keepalive_listenkey(); });
+  add_time_interval(60 * 30 * time_unit::NANOSECONDS_PER_SECOND, [&](auto e) { keepalive_listenkey(); });
 }
 
 void TraderBinance::on_exit() { SPDLOG_INFO("TraderBinance on_exit"); }
