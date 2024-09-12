@@ -167,9 +167,44 @@ bool TraderBinance::on_custom_event(const event_ptr &event) {
   }
   return false;
 }
+
 bool TraderBinance::custom_on_query_open_orders_event(const event_ptr &event) {
   auto msg = event->data_as_string();
   SPDLOG_INFO(msg);
+
+  auto doc = parse_json(msg);
+  for (auto &ba_order : doc.GetArray()) {
+
+    auto clientOrderId = ba_order["clientOrderId"].GetString();
+
+    uint64_t kf_order_id;
+    uint64_t ba_order_id = ba_order["orderId"].GetInt64();
+    try {
+      kf_order_id = std::stoull(clientOrderId);
+    } catch (const std::invalid_argument &e) {
+      SPDLOG_INFO("external order ba_order_id {}, clientOrderId={}", ba_order_id, clientOrderId);
+      continue;
+    }
+    if (!has_order(kf_order_id)) {
+      SPDLOG_WARN("recover error ba_order_id {}, kf_order_id={} not in td", ba_order_id, kf_order_id);
+      continue;
+    }
+    auto &order_state = get_order(kf_order_id);
+
+    order_state.data.volume_left = std::stod(ba_order["origQty"].GetString()) - std::stod(ba_order["executedQty"].GetString());
+
+    auto ba_order_status = ba_order["status"].GetString(); // 订单状态
+
+    map_binance_to_kf_order_id_.emplace(ba_order_id, kf_order_id);
+    map_kf_to_binance_order_id_.emplace(kf_order_id, ba_order_id);
+    if (string_equals(ba_order_status, "PARTIALLY_FILLED")) {
+      order_state.data.status = OrderStatus::PartialFilledActive;
+    }
+    order_state.data.update_time = now();
+    order_state.data.restore_time = now();
+    try_write_to(order_state.data, order_state.dest);
+  }
+
   return true;
 }
 
@@ -478,10 +513,7 @@ void TraderBinance::pre_start() {
   disable_recover();
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
-  // io_thread_([ioc_]() {
-  //       ioc_.run();
-  // });
-  // ioc_.run();
+
   config_ = nlohmann::json::parse(get_config());
   SPDLOG_INFO("config: {}", get_config());
 
@@ -613,7 +645,7 @@ bool TraderBinance::cancel_order(const event_ptr &event) {
     return false;
   }
 
-  SPDLOG_INFO("sending cancel {}", order_state.data.to_string());
+  SPDLOG_DEBUG("sending cancel {}", order_state.data.to_string());
   RequestParams params;
 
   params["symbol"] = kf_to_binance_instrument(order_state.data.instrument_id.to_string());
