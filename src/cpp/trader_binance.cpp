@@ -125,7 +125,8 @@ void TraderBinance::on_query_listenkey(const std::string &msg) {
     return;
   }
 
-  subscribe_user_stream(doc["listenKey"].GetString());
+  listenkey_ = doc["listenKey"].GetString();
+  subscribe_user_stream(listenkey_);
   SPDLOG_DEBUG("subscribe_user_stream listenkey {}", msg);
 }
 
@@ -149,12 +150,14 @@ void TraderBinance::on_ws_message(const std::string &sessionName, std::string &m
 
 void TraderBinance::on_cancel_order(const std::string &msg) { SPDLOG_DEBUG("on_cancel_order {}", msg); }
 
-void TraderBinance::on_renew_listenkey(const std::string &msg) { SPDLOG_DEBUG("on_renew_listenkey {}", msg); }
+void TraderBinance::on_keepalive_listenkey(const std::string &msg) {
+  SPDLOG_TRACE("keepalive_listenkey {}", msg);
+}
 
 void TraderBinance::on_restful_message(const std::string &msg) { SPDLOG_DEBUG(msg); }
 
 bool TraderBinance::on_custom_event(const event_ptr &event) {
-  SPDLOG_TRACE("msg_type: {}", event->msg_type());
+  // SPDLOG_TRACE("msg_type: {}", event->msg_type());
   switch (event->msg_type()) {
   case BinanceWebSocketReportType:
     return custom_on_ws_event(event);
@@ -170,7 +173,7 @@ bool TraderBinance::on_custom_event(const event_ptr &event) {
 
 bool TraderBinance::custom_on_query_open_orders_event(const event_ptr &event) {
   auto msg = event->data_as_string();
-  SPDLOG_INFO(msg);
+  // SPDLOG_INFO(msg);
 
   auto doc = parse_json(msg);
   for (auto &ba_order : doc.GetArray()) {
@@ -321,12 +324,12 @@ bool TraderBinance::custom_on_send_order_event(const event_ptr &event) {
 
 bool TraderBinance::custom_on_ws_event(const event_ptr &event) {
   auto msg = event->data_as_string();
-  SPDLOG_DEBUG(msg);
+  SPDLOG_TRACE("ws msg: {}", msg);
 
   auto doc = parse_json(msg);
   auto ba_event_type = doc["e"].GetString();
 
-  // renew listenKey
+  // listenKey expired
   if (string_equals(ba_event_type, "listenKeyExpired")) {
 
     // unsubscribe_user_stream(doc["listenKey"].GetString());
@@ -509,6 +512,20 @@ void TraderBinance::query_open_orders() {
                   std::bind(&TraderBinance::on_query_open_orders, this, std::placeholders::_1));
 }
 
+void TraderBinance::keepalive_listenkey() {
+  // SPDLOG_TRACE("call keepalive_listenkey");
+
+  std::string target_listenKey = market_path_ + "/v1/listenKey";
+
+  RequestParams params;
+  params["listenKey"] = listenkey_;
+
+  sign_request(target_listenKey, params);
+
+  restful_request(RequestMethod::put, target_listenKey.c_str(),
+                  std::bind(&TraderBinance::on_keepalive_listenkey, this, std::placeholders::_1));
+}
+
 void TraderBinance::pre_start() {
   disable_recover();
   ctx_.set_verify_mode(ssl::verify_none);
@@ -565,6 +582,8 @@ void TraderBinance::pre_start() {
 void TraderBinance::on_start() {
   SPDLOG_INFO("TraderBinance on_start");
   update_broker_state(BrokerState::Ready);
+
+  add_time_interval(60 * 5 * time_unit::NANOSECONDS_PER_SECOND, [&](auto e) { keepalive_listenkey(); });
 }
 
 void TraderBinance::on_exit() { SPDLOG_INFO("TraderBinance on_exit"); }

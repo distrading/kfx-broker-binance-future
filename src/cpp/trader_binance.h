@@ -58,6 +58,7 @@ public:
   void query_listenkey();
   void query_account();
   void query_open_orders();
+  void keepalive_listenkey();
 
   // web callbacks
   void on_ws_message(const std::string &sessionName, std::string &msg) override;
@@ -74,7 +75,7 @@ public:
   void on_query_open_orders(const std::string &msg);
   void on_cancel_order(const std::string &msg);
   void on_query_listenkey(const std::string &msg);
-  void on_renew_listenkey(const std::string &msg);
+  void on_keepalive_listenkey(const std::string &msg);
 
   // custom websocket callbacks
   bool custom_on_ws_event(const event_ptr &event);
@@ -85,7 +86,6 @@ public:
   bool custom_on_query_open_orders_event(const event_ptr &event);
   bool custom_on_cancel_order_event(const event_ptr &event);
   bool custom_on_query_listenkey_event(const event_ptr &event);
-  bool custom_on_renew_listenkey_event(const event_ptr &event);
 
   // instruments
   std::string binance_to_kf_instrument(std::string ba_instrument) {
@@ -105,6 +105,8 @@ private:
   std::string ep_version_;
   kungfu::array<char, EXCHANGE_ID_LEN> exchange_id_;
   longfist::enums::InstrumentType instrument_type_;
+
+  std::string listenkey_;
 
   net::io_context ioc_;
   ssl::context ctx_{ssl::context::sslv23_client};
