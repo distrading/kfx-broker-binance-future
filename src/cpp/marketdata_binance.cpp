@@ -92,9 +92,25 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
   auto stream_name = doc["stream"].GetString();
 
   if (endswith(stream_name, "trade")) {
+    // for 0 price/volume in trade
+    auto price = std::stod(doc["data"]["p"].GetString());
+    auto volume = std::stod(doc["data"]["q"].GetString());
+
+    if (std::fabs(price) < 1e-9 || std::fabs(volume) < 1e-9) {
+      SPDLOG_WARN("0 in trade message {}", msg);
+      return;
+    }
+
     Transaction &transaction = get_public_writer()->open_data<Transaction>(0);
 
-    from_binance(doc["data"], transaction);
+    transaction.price = price;
+    transaction.volume = volume;
+    transaction.exec_type = longfist::enums::ExecType::Trade;
+    int64_t ts = doc["data"]["T"].GetInt64();
+    transaction.data_time = ts * 1000000;
+    bool is_buyer_maker = doc["data"]["m"].GetBool();
+    transaction.side = is_buyer_maker ? longfist::enums::Side::Sell : longfist::enums::Side::Buy;
+
     transaction.instrument_id = binance_to_kf_instrument(doc["data"]["s"].GetString()).c_str();
     transaction.exchange_id = exchange_id_;
     transaction.instrument_type = instrument_type_;

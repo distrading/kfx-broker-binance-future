@@ -21,7 +21,7 @@ struct TDConfiguration {
   std::string api_key;
   std::string api_secret;
   bool testnet;
-  bool sync_external_order;
+  // bool sync_external_order;
 };
 
 inline void from_json(const nlohmann::json &j, TDConfiguration &c) {
@@ -30,7 +30,7 @@ inline void from_json(const nlohmann::json &j, TDConfiguration &c) {
   j.at("api_key").get_to(c.api_key);
   j.at("api_secret").get_to(c.api_secret);
   j.at("testnet").get_to(c.testnet);
-  j.at("sync_external_order").get_to(c.sync_external_order);
+  // j.at("sync_external_order").get_to(c.sync_external_order);
 }
 
 class TraderBinance : public broker::Trader, public BinanceWebsocketClient, public BinanceRESTfulClient {
