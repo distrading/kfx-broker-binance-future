@@ -2,6 +2,7 @@
   "version": "1.0.0-alpha.0",
   "description": "KungFu Extension Binance",
   "main": "package.json",
+  "name": "binancefuture",
   "kungfuBuild": {
     "cpp": {
       "cmakeOverride": true,

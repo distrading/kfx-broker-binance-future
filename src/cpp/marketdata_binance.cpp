@@ -91,7 +91,7 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
   }
   auto stream_name = doc["stream"].GetString();
 
-  if (endswith(stream_name, "aggTrade")) {
+  if (endswith(stream_name, "trade")) {
     Transaction &transaction = get_public_writer()->open_data<Transaction>(0);
 
     from_binance(doc["data"], transaction);
