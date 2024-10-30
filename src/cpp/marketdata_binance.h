@@ -68,6 +68,11 @@ private:
   std::unordered_map<std::string, std::string> kf_ba_instrument_map_;
   std::unordered_map<std::string, std::string> ba_kf_instrument_map_;
   std::unordered_map<std::string, longfist::types::Transaction> transaction_map_; // cache for quote last_price
+
+  // uint32_t transaction_band_uid_{};
+  // uint32_t tick_band_uid_{};
+  yijinjing::journal::writer_ptr public_writer_;
+
 };
 } // namespace kungfu::wingchun::binance
 

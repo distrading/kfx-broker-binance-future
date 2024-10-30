@@ -57,7 +57,7 @@ void MarketDataBinance::on_restful_message(const std::string &msg) {
     }
     if (doc.HasMember("symbols")) {
       for (auto &item : doc["symbols"].GetArray()) {
-        Instrument &instrument = get_public_writer()->open_data<Instrument>(0);
+        Instrument &instrument = public_writer_->open_data<Instrument>(0);
 
         from_binance(item, instrument);
         instrument.exchange_id = exchange_id_;
@@ -71,7 +71,7 @@ void MarketDataBinance::on_restful_message(const std::string &msg) {
         kf_ba_instrument_map_[instrument.instrument_id.to_string()] = item["symbol"].GetString();
         ba_kf_instrument_map_[item["symbol"].GetString()] = instrument.instrument_id.to_string();
 
-        get_public_writer()->close_data();
+        public_writer_->close_data();
       }
     }
 
@@ -97,11 +97,11 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
     auto volume = std::stod(doc["data"]["q"].GetString());
 
     if (std::fabs(price) < 1e-9 || std::fabs(volume) < 1e-9) {
-      SPDLOG_WARN("0 in trade message {}", msg);
+      // SPDLOG_WARN("0 in trade message {}", msg);
       return;
     }
 
-    Transaction &transaction = get_public_writer()->open_data<Transaction>(0);
+    Transaction &transaction = public_writer_->open_data<Transaction>(0);
 
     transaction.price = price;
     transaction.volume = volume;
@@ -115,13 +115,13 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
     transaction.exchange_id = exchange_id_;
     transaction.instrument_type = instrument_type_;
 
-    get_public_writer()->close_data();
+    public_writer_->close_data();
     // SPDLOG_DEBUG("transaction: {}", transaction.to_string());
     transaction_map_[transaction.instrument_id] = transaction;
 
   } else if (endswith(stream_name, "depth10@100ms")) {
 
-    Quote &quote = get_public_writer()->open_data<Quote>(0);
+    Quote &quote = public_writer_->open_data<Quote>(0);
     from_binance(doc["data"], quote);
 
     quote.exchange_id = exchange_id_;
@@ -134,10 +134,10 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
       quote.last_price = transaction->second.price;
     }
 
-    get_public_writer()->close_data();
+    public_writer_->close_data();
     // SPDLOG_DEBUG("quote: {}", quote.to_string());
   } else if (endswith(stream_name, "bookTicker")) {
-    Tick &tick = get_public_writer()->open_data<Tick>(0);
+    Tick &tick = public_writer_->open_data<Tick>(0);
     from_binance(doc["data"], tick);
 
     tick.exchange_id = exchange_id_;
@@ -145,7 +145,7 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
 
     tick.instrument_id = binance_to_kf_instrument(doc["data"]["s"].GetString()).c_str();
 
-    get_public_writer()->close_data();
+    public_writer_->close_data();
     // SPDLOG_DEBUG("tick: {}", tick.to_string());
 
   } else {
@@ -159,7 +159,9 @@ void MarketDataBinance::on_ws_close(const std::string &sessionName) {
 }
 
 void MarketDataBinance::pre_start() {
-
+  // transaction_band_uid_ = request_band("market-data-band-transaction", 256);
+  // tick_band_uid_ = request_band("market-data-band-tick", 256);
+  public_writer_ = get_public_writer();
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
   config_ = nlohmann::json::parse(get_config());
