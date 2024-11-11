@@ -141,7 +141,7 @@ void TraderBinance::on_send_order(const std::string &msg, const std::string &ext
 }
 
 void TraderBinance::on_ws_message(const std::string &sessionName, std::string &msg) {
-  SPDLOG_TRACE(msg);
+  // SPDLOG_TRACE(msg);
   BufferBinanceMessage ws_message;
   ws_message.message = msg.c_str();
   get_thread_writer()->write(now(), ws_message, BinanceWebSocketReportType);

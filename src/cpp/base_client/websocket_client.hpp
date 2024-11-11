@@ -140,8 +140,8 @@ public:
       try {
         ConnectAndReceive();
       } catch (beast::system_error const &se) {
-        SPDLOG_ERROR(" {} workerThreadFunc exception: {}", sessionIdenfitier_, se.code().message());
-        std::this_thread::sleep_for(std::chrono::seconds(2)); // 重试
+        // SPDLOG_ERROR(" {} workerThreadFunc exception: {}", sessionIdenfitier_, se.code().message());
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // 重试
         continue;
       }
       {

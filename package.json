@@ -19,6 +19,11 @@
       }
     }
   },
+  "scripts": {
+    "clean": "yarn kfs extension clean",
+    "build": "yarn kfs extension build",
+    "package": "yarn kfs extension package"
+  },
   "kungfuDependencies": {
     "boost": "v1.7.9",
     "rapidjson": "v1.1.0",
