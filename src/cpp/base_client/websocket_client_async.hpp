@@ -5,10 +5,8 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
-#include <iostream>
 #include <spdlog/spdlog.h>
 #include <string>
-#include <thread>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -45,29 +43,37 @@ public:
   void start_ws_connection() {
     resolver_.async_resolve(host_, port_, beast::bind_front_handler(&WebsocketClient::on_resolve, shared_from_this()));
   }
-  void stop_ws_connection() {}
+
+  void stop_ws_connection() {
+    if (ws_) {
+      ws_->close(websocket::close_code::normal);
+    }
+  }
 
 private:
   void on_resolve(beast::error_code ec, tcp::resolver::results_type results) {
     if (ec) {
       SPDLOG_ERROR("Resolve error: {}", ec.message());
+      callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
 
     ws_ = std::make_shared<websocket::stream<beast::ssl_stream<tcp::socket>>>(ioc_, ctx_);
-    net::async_connect(get_lowest_layer(*ws_), results.begin(), results.end(),
+    net::async_connect(get_lowest_layer(*ws_), results,
                        beast::bind_front_handler(&WebsocketClient::on_connect, shared_from_this()));
   }
 
   void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type) {
     if (ec) {
       SPDLOG_ERROR("Connect error: {}", ec.message());
+      callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
 
     if (!SSL_set_tlsext_host_name(ws_->next_layer().native_handle(), host_.c_str())) {
       ec = beast::error_code(static_cast<int>(::ERR_get_error()), net::error::get_ssl_category());
       SPDLOG_ERROR("Failed to set SNI Hostname: {}", ec.message());
+      callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
 
@@ -78,6 +84,7 @@ private:
   void on_ssl_handshake(beast::error_code ec) {
     if (ec) {
       SPDLOG_ERROR("SSL Handshake error: {}", ec.message());
+      callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
 
@@ -92,6 +99,7 @@ private:
   void on_handshake(beast::error_code ec) {
     if (ec) {
       SPDLOG_ERROR("Handshake error: {}", ec.message());
+      callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
 
@@ -110,6 +118,7 @@ private:
         SPDLOG_INFO("Socket was closed.");
       } else {
         SPDLOG_ERROR("Read error: {}", ec.message());
+        SPDLOG_ERROR("last msg {}", boost::beast::buffers_to_string(buffer_.data()));
       }
       callbacks_.on_ws_close(sessionIdenfitier_);
       return;
