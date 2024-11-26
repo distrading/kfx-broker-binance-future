@@ -73,9 +73,6 @@ private:
   uint32_t tick_band_uid_{};
   yijinjing::journal::writer_ptr public_writer_;
   
-  inline static thread_local yijinjing::journal::writer_ptr transaction_band_writer_ = nullptr;
-  inline static thread_local yijinjing::journal::writer_ptr tick_band_writer_ = nullptr;
-
 };
 } // namespace kungfu::wingchun::binance
 

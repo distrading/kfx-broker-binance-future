@@ -21,20 +21,6 @@ class BinanceWebsocketClient : public WebsocketCallbacks {
   std::map<std::string, std::shared_ptr<WebsocketClient>> subscribe_map_;
   std::map<std::string, std::shared_ptr<WebsocketClient>> user_stream_;
 
-  // virtual void on_ws_close(const std::string &sessionName) override {
-  //   SPDLOG_INFO("sessionName {} Connection is down.", sessionName);
-  // }
-
-  // // a message received on the socket
-  // virtual void on_ws_message(const std::string &sessionName, std::string &msg) override{
-  //   SPDLOG_INFO("received {}", msg);
-  //   }
-
-  // virtual void subscribe_instrument(std::string instrument) {
-  //   SPDLOG_INFO("{} subscribed.", instrument);
-  // }
-  // virtual void unsubscribe_instrument(std::string instrument) {
-  //   SPDLOG_INFO("{} unsubscribed.", instrument);
 
 public:
   BinanceWebsocketClient(net::io_context &ioc, ssl::context &ctx) : ioc_(ioc), ctx_(ctx){};
@@ -74,7 +60,7 @@ public:
     subscribe_map_[instrument] =
         std::make_shared<WebsocketClient>(*this, instrument, ioc_, ctx_, host_, port_, target.c_str());
     subscribe_map_[instrument]->start_ws_connection();
-    SPDLOG_DEBUG("resubscribe {} {} {}", host_, target, instrument);
+    SPDLOG_TRACE("resubscribe {} {} {}", host_, target, instrument);
 
   }
 

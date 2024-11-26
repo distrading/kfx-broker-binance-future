@@ -1,15 +1,12 @@
 #include "marketdata_binance.h"
 #include "base_client/restful_client.hpp"
 #include "base_client/root_certificates.hpp"
-#include "fmt/format.h"
 #include "kungfu/longfist/enums.h"
 #include "kungfu/longfist/types.h"
 #include "kungfu/wingchun/common.h"
 #include "spdlog/spdlog.h"
-#include <cstddef>
 #include <cstdio>
 #include <cstring>
-// #include <nlohmann/json.hpp>
 #include "type_convert.h"
 
 #include "rapidjson/document.h" // rapidjson's DOM-style API
@@ -22,7 +19,6 @@ using json = nlohmann::json;
 using namespace rapidjson;
 
 namespace kungfu::wingchun::binance {
-// ,io_thread_(&MarketDataBinance::runIoContext, this)
 MarketDataBinance::MarketDataBinance(broker::BrokerVendor &vendor)
     : MarketData(vendor), ctx_(ssl::context::tlsv12_client), work_(ioc_),
       io_thread_(&MarketDataBinance::runIoContext, this), BinanceWebsocketClient(ioc_, ctx_),
@@ -100,14 +96,8 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
       // SPDLOG_WARN("0 in trade message {}", msg);
       return;
     }
-    if (not transaction_band_writer_) {
-      if (not has_band_writer(transaction_band_uid_)) {
-          SPDLOG_INFO("band writer for market-data-band-transaction not ready");
-          return;
-      }
-      transaction_band_writer_ = get_band_writer(transaction_band_uid_);
-    }
-    Transaction &transaction = transaction_band_writer_->open_data<Transaction>(0);
+
+    Transaction &transaction = public_writer_->open_data<Transaction>(0);
 
     transaction.price = price;
     transaction.volume = volume;
@@ -121,7 +111,7 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
     transaction.exchange_id = exchange_id_;
     transaction.instrument_type = instrument_type_;
 
-    transaction_band_writer_->close_data();
+    public_writer_->close_data();
     // SPDLOG_DEBUG("transaction: {}", transaction.to_string());
     transaction_map_[transaction.instrument_id] = transaction;
 
@@ -143,14 +133,7 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
     public_writer_->close_data();
     // SPDLOG_DEBUG("quote: {}", quote.to_string());
   } else if (endswith(stream_name, "bookTicker")) {
-    if (not tick_band_writer_) {
-      if (not has_band_writer(tick_band_uid_)) {
-          SPDLOG_INFO("band writer for market-data-band-tick not ready");
-          return;
-      }
-      tick_band_writer_ = get_band_writer(tick_band_uid_);
-    }
-    Tick &tick = tick_band_writer_->open_data<Tick>(0);
+    Tick &tick = public_writer_->open_data<Tick>(0);
     from_binance(doc["data"], tick);
 
     tick.exchange_id = exchange_id_;
@@ -158,7 +141,7 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
 
     tick.instrument_id = binance_to_kf_instrument(doc["data"]["s"].GetString()).c_str();
 
-    tick_band_writer_->close_data();
+    public_writer_->close_data();
     // SPDLOG_DEBUG("tick: {}", tick.to_string());
 
   } else {
@@ -167,13 +150,11 @@ void MarketDataBinance::on_ws_message(const std::string &sessionName, std::strin
 }
 
 void MarketDataBinance::on_ws_close(const std::string &sessionName) {
-  SPDLOG_INFO("websocket reconnect {}", sessionName);
+  SPDLOG_DEBUG("websocket reconnect {}", sessionName);
   resubscribe_instrument(sessionName);
 }
 
 void MarketDataBinance::pre_start() {
-  transaction_band_uid_ = request_band("market-data-band-transaction", 256);
-  tick_band_uid_ = request_band("market-data-band-tick", 256);
   public_writer_ = get_public_writer();
   ctx_.set_verify_mode(ssl::verify_none);
   load_root_certificates(ctx_);
@@ -206,7 +187,7 @@ bool MarketDataBinance::subscribe(const std::vector<longfist::types::InstrumentK
     auto instrument = kf_to_binance_instrument(key.instrument_id.to_string());
     transform(instrument.begin(), instrument.end(), instrument.begin(), ::tolower);
     subscribe_instrument(instrument);
-    SPDLOG_TRACE("subscribe instrument_id: {}", instrument);
+    // SPDLOG_TRACE("subscribe instrument_id: {}", instrument);
   }
   return true;
 }
