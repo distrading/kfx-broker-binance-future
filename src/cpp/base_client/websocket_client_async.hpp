@@ -7,6 +7,8 @@
 #include <boost/beast/ssl.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <thread>
+#include <chrono>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -33,6 +35,11 @@ class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
   std::string handshake_target_;
   WebsocketCallbacks &callbacks_;
   std::string sessionIdenfitier_;
+  
+  std::chrono::steady_clock::time_point lastMessageTime;
+  std::chrono::seconds timeoutPeriod;
+  std::thread timerThread;
+  bool timerRunning;
 
 public:
   explicit WebsocketClient(WebsocketCallbacks &callbacks, std::string &sessionIdenfitier, net::io_context &ioc,
@@ -48,9 +55,36 @@ public:
     if (ws_) {
       ws_->close(websocket::close_code::normal);
     }
+    timerRunning = false;
+    if (timerThread.joinable()) {
+      timerThread.join();
+    }
   }
 
+  void strat_timer_check(int seconds) {
+    startTimer(seconds);
+  }
+
+
+
 private:
+  void startTimer(int seconds) {
+    timeoutPeriod = std::chrono::seconds(seconds);
+    lastMessageTime = std::chrono::steady_clock::now();
+    timerRunning = true;
+    timerThread = std::thread([this]() {
+      while (timerRunning) {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        if (std::chrono::steady_clock::now() - lastMessageTime > timeoutPeriod) {
+          SPDLOG_ERROR("{} no msg receive error", sessionIdenfitier_);
+          timerRunning = false;
+          callbacks_.on_ws_close(sessionIdenfitier_);
+        }
+      }
+    });
+  }
+
+
   void on_resolve(beast::error_code ec, tcp::resolver::results_type results) {
     if (ec) {
       SPDLOG_ERROR("Resolve error: {}", ec.message());
@@ -123,6 +157,8 @@ private:
       callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }
+
+    lastMessageTime = std::chrono::steady_clock::now();
 
     std::string message = beast::buffers_to_string(buffer_.data());
     buffer_.consume(buffer_.size());

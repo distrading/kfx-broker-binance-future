@@ -46,6 +46,7 @@ public:
     if (subscribe_map_.find(instrument) == subscribe_map_.end()) {
       subscribe_map_[instrument] =
           std::make_shared<WebsocketClient>(*this, instrument, ioc_, ctx_, host_, port_, target.c_str());
+      subscribe_map_[instrument]->strat_timer_check(30);
       subscribe_map_[instrument]->start_ws_connection();
       SPDLOG_TRACE("subscribe {} {} {}", host_, target, instrument);
     } else {
@@ -59,6 +60,7 @@ public:
         "/stream?streams=" + instrument + "@trade/" + instrument + "@depth10@100ms/" + instrument + "@bookTicker";
     subscribe_map_[instrument] =
         std::make_shared<WebsocketClient>(*this, instrument, ioc_, ctx_, host_, port_, target.c_str());
+    subscribe_map_[instrument]->strat_timer_check(30);
     subscribe_map_[instrument]->start_ws_connection();
     SPDLOG_TRACE("resubscribe {} {} {}", host_, target, instrument);
 
@@ -77,6 +79,7 @@ public:
     std::string target = "/ws/" + listenKey;
     user_stream_[listenKey] =
         std::make_shared<WebsocketClient>(*this, listenKey, ioc_, ctx_, host_, port_, target.c_str());
+    user_stream_[listenKey]->strat_timer_check(600);
     user_stream_[listenKey]->start_ws_connection();
   }
 
