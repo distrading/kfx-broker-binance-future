@@ -487,7 +487,7 @@ bool TraderBinance::custom_on_ws_event(const event_ptr &event) {
 }
 
 void TraderBinance::on_ws_close(const std::string &sessionName) {
-  unsubscribe_user_stream(sessionName);
+  // unsubscribe_user_stream(sessionName);
   query_listenkey();
   SPDLOG_WARN("websocket session {} closed! reconnect", sessionName);
 }
