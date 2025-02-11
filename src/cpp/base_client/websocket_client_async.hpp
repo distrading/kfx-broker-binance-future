@@ -144,6 +144,13 @@ private:
     ws_->async_read(buffer_, beast::bind_front_handler(&WebsocketClient::on_read, shared_from_this()));
   }
 
+  void cleanup_timer() {
+    timerRunning = false;
+    if (timerThread.joinable()) {
+      timerThread.join();
+    }
+  }
+
   void on_read(beast::error_code ec, std::size_t bytes_transferred) {
     boost::ignore_unused(bytes_transferred);
 
@@ -154,6 +161,7 @@ private:
         SPDLOG_ERROR("Read error: {}", ec.message());
         SPDLOG_ERROR("last msg {}", boost::beast::buffers_to_string(buffer_.data()));
       }
+      cleanup_timer();
       callbacks_.on_ws_close(sessionIdenfitier_);
       return;
     }

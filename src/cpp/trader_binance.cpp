@@ -657,7 +657,6 @@ bool TraderBinance::insert_order(const event_ptr &event) {
 
 bool TraderBinance::cancel_order(const event_ptr &event) {
   const auto &action = event->data<OrderAction>();
-  auto &order_state = get_order(action.order_id);
   auto order_id_iter = map_kf_to_binance_order_id_.find(action.order_id);
   if (order_id_iter == map_kf_to_binance_order_id_.end()) {
     SPDLOG_ERROR("failed to cancel order {}, can't find related binance order id", action.order_id);
@@ -668,6 +667,7 @@ bool TraderBinance::cancel_order(const event_ptr &event) {
     SPDLOG_ERROR("no order_id {} in orders_", action.order_id);
     return false;
   }
+  auto &order_state = get_order(action.order_id);
 
   SPDLOG_DEBUG("sending cancel {}", order_state.data.to_string());
   RequestParams params;
