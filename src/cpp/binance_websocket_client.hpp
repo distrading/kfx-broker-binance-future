@@ -2,7 +2,6 @@
 #ifndef BINANCE_WEBSOCKET_CLIENT_HPP
 #define BINANCE_WEBSOCKET_CLIENT_HPP
 
-// #include "base_client/websocket_client.hpp"
 #include "base_client/websocket_client_async.hpp"
 #include "boost/asio/io_context.hpp"
 #include <boost/asio.hpp>

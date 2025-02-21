@@ -2,7 +2,6 @@
 #ifndef BINANCE_RESTFUL_CLIENT_HPP
 #define BINANCE_RESTFUL_CLIENT_HPP
 
-// #include "base_client/restful_client.hpp"
 #include "base_client/restful_client_async.hpp"
 #include "boost/asio/io_context.hpp"
 #include "spdlog/spdlog.h"

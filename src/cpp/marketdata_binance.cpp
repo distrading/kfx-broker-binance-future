@@ -1,5 +1,4 @@
 #include "marketdata_binance.h"
-#include "base_client/restful_client.hpp"
 #include "base_client/root_certificates.hpp"
 #include "kungfu/longfist/enums.h"
 #include "kungfu/longfist/types.h"

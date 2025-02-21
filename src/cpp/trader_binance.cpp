@@ -1,5 +1,4 @@
 #include "trader_binance.h"
-#include "base_client/restful_client.hpp"
 #include "binance_restful_client.hpp"
 #include "boost/asio/ssl/verify_mode.hpp"
 #include "buffer_data.h"
